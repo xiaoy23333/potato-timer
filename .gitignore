@@ -1,0 +1,22 @@
+# 依赖：380MB，绝对不要提交（有 package.json + pnpm-lock.yaml 就能还原）
+node_modules/
+.pnpm-store/
+
+# 自检产物：截图里有你的桌面内容（浏览器标签、其它窗口），而且随时能重新生成
+screenshots/
+
+# 临时日志
+*.log
+smoke-*.log
+smoke-*.err
+
+# 与本项目无关：改 DSH 输入框快捷键用的脚本
+patch-enter-key.ps1
+
+# 系统 / 编辑器
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp

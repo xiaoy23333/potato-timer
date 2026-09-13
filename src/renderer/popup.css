@@ -1,0 +1,172 @@
+/* 提醒弹窗：一张白色卡片 + 按钮 + 「滑动解锁」样式的滑块 */
+
+body {
+  background: transparent;
+  padding: 9px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.card {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(79, 195, 247, 0.4);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* —— 标题行 —— */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--focus);
+  box-shadow: 0 0 0 4px var(--focus-soft);
+}
+
+.dot.is-break {
+  background: var(--break);
+  box-shadow: 0 0 0 4px var(--break-soft);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.4px;
+}
+
+/* —— 按钮 + 滑块 —— */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-snooze {
+  flex: 0 0 auto;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(79, 195, 247, 0.4);
+  color: var(--accent-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.btn-snooze:hover {
+  background: rgba(79, 195, 247, 0.24);
+}
+
+.btn-snooze:active {
+  transform: scale(0.97);
+}
+
+.btn-main {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.btn-kbd {
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-faint);
+  letter-spacing: 0.4px;
+}
+
+/* —— 滑块 —— */
+
+.slider {
+  position: relative;
+  flex: 1 1 auto;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #eff5fe, #e5eefb);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.slider.is-dragging {
+  cursor: grabbing;
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, rgba(79, 195, 247, 0.08), rgba(79, 195, 247, 0.36));
+  pointer-events: none;
+}
+
+.label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  letter-spacing: 1.2px;
+  pointer-events: none;
+  transition: opacity 0.12s linear;
+}
+
+.knob {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--accent-deep);
+  box-shadow:
+    0 3px 10px rgba(33, 150, 201, 0.28),
+    inset 0 0 0 1px rgba(79, 195, 247, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition:
+    left 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.knob.is-dragging {
+  transition: none;
+}
+
+/* 拖到最右端：变色提示「松手即开始」 */
+.knob.is-ready {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 3px 14px rgba(33, 150, 201, 0.5);
+}

@@ -1,0 +1,53 @@
+/* 明亮清新的公共主题令牌，主窗口 / 弹窗 / 小浮窗共用 */
+
+:root {
+  --bg: #f4f8ff;
+  --bg-deep: #e9f1fd;
+  --card: #ffffff;
+
+  --ink: #1e2a45;
+  --ink-soft: #606f8c;
+  --ink-faint: #9aa7be;
+
+  --accent: #4fc3f7;
+  --accent-deep: #2196c9;
+  --accent-soft: rgba(79, 195, 247, 0.14);
+
+  /* 专注用番茄红，休息用淡蓝 */
+  --focus: #f4664f;
+  --focus-soft: rgba(244, 102, 79, 0.13);
+  --break: #4fc3f7;
+  --break-soft: rgba(79, 195, 247, 0.14);
+
+  --line: rgba(30, 42, 69, 0.09);
+  --line-strong: rgba(30, 42, 69, 0.16);
+
+  --shadow-card: 0 18px 44px rgba(30, 42, 69, 0.14), 0 2px 8px rgba(30, 42, 69, 0.06);
+  --shadow-soft: 0 6px 18px rgba(30, 42, 69, 0.1);
+
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  --font: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', system-ui, -apple-system,
+    sans-serif;
+  --font-num: 'Segoe UI Variable Display', 'Segoe UI', 'DIN Alternate', 'Microsoft YaHei UI', system-ui,
+    sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input {
+  font-family: inherit;
+}

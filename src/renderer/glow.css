@@ -1,0 +1,125 @@
+/* 光效层：整页透明，只在四条边绘制向内渐隐的光 */
+
+:root {
+  --c-strong: rgba(79, 195, 247, 0.5);
+  --c-mid: rgba(79, 195, 247, 0.24);
+  --c-soft: rgba(79, 195, 247, 0.12);
+  --dur: 2200ms;
+  --edge-h: 20vh;
+  --edge-w: 14vw;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+.glow {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+}
+
+/* 只闪一次：闪一下之后自己淡出消失，不会一直亮着、也不会循环闪 */
+.glow.is-flashing {
+  animation: flash var(--dur, 1600ms) ease-out 1 both;
+  will-change: opacity;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  28% {
+    opacity: 0.55;
+  }
+  46% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.edge {
+  position: absolute;
+}
+
+.edge-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--edge-h);
+  background: linear-gradient(
+    to bottom,
+    var(--c-strong) 0%,
+    var(--c-mid) 32%,
+    var(--c-soft) 62%,
+    transparent 100%
+  );
+}
+
+.edge-bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--edge-h);
+  background: linear-gradient(
+    to top,
+    var(--c-strong) 0%,
+    var(--c-mid) 32%,
+    var(--c-soft) 62%,
+    transparent 100%
+  );
+}
+
+.edge-left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--edge-w);
+  background: linear-gradient(
+    to right,
+    var(--c-strong) 0%,
+    var(--c-mid) 32%,
+    var(--c-soft) 62%,
+    transparent 100%
+  );
+}
+
+.edge-right {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--edge-w);
+  background: linear-gradient(
+    to left,
+    var(--c-strong) 0%,
+    var(--c-mid) 32%,
+    var(--c-soft) 62%,
+    transparent 100%
+  );
+}
+
+/* 额外一层向内的柔和内阴影，让四角自然连起来 */
+.vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 18vmin 2vmin var(--c-mid),
+    inset 0 0 5vmin 0.5vmin var(--c-soft);
+}

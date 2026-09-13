@@ -1,0 +1,16 @@
+{
+  "name": "pomodoro-timer",
+  "version": "0.1.0",
+  "description": "番茄钟 — 到点屏幕顶部弹窗 + 四周向内光效的 Electron 桌面番茄钟",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.3.0"
+  }
+}

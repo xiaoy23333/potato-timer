@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+    <title>小浮窗</title>
+    <link rel="stylesheet" href="shared/theme.css" />
+    <link rel="stylesheet" href="float.css" />
+  </head>
+  <body>
+    <!-- 常驻小浮窗：屏幕正上方居中，任何状态下都只显示时间 -->
+    <div class="pill" id="pill"><span id="time">40:00</span></div>
+    <script src="shared/util.js"></script>
+    <script src="float.js"></script>
+  </body>
+</html>

@@ -1,0 +1,45 @@
+/* 小浮窗：一颗只显示时间的小胶囊 */
+
+body {
+  background: transparent;
+  padding: 5px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.pill {
+  height: 100%;
+  border-radius: 18px;
+  /* 背景透明：只留时间本身，压一层文字阴影保证在任何壁纸上都看得清 */
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-num);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--focus);
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.85),
+    0 1px 5px rgba(0, 0, 0, 0.7),
+    0 0 16px rgba(0, 0, 0, 0.45);
+  transition: color 0.3s ease;
+}
+
+/* 休息 / 空闲时换个颜色，但依然只显示时间 */
+.pill.is-break {
+  color: #a8e4ff;
+}
+
+.pill.is-idle {
+  color: #e6ecf7;
+}
+
+/* 设置里勾上「可以拖动」后，整颗胶囊就是拖动区 */
+body.is-draggable .pill {
+  -webkit-app-region: drag;
+  cursor: move;
+}

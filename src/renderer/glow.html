@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+    <title>光效</title>
+    <link rel="stylesheet" href="glow.css" />
+  </head>
+  <body>
+    <!--
+      四周向内渗入的光效层。
+      整个窗口透明 + 点击穿透（由主进程 setIgnoreMouseEvents 保证），
+      这里只负责把四条边画成向内渐隐的淡蓝光。
+    -->
+    <div class="glow" id="glow" aria-hidden="true">
+      <div class="edge edge-top"></div>
+      <div class="edge edge-bottom"></div>
+      <div class="edge edge-left"></div>
+      <div class="edge edge-right"></div>
+      <div class="vignette"></div>
+    </div>
+    <script src="glow.js"></script>
+  </body>
+</html>
