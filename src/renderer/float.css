@@ -27,10 +27,11 @@ body {
   letter-spacing: 0.5px;
   font-variant-numeric: tabular-nums;
   color: var(--float-color);
+  /* 一圈很淡的阴影：够保证在任何壁纸上都看得清就行。
+     之前叠了三层（其中一层还是 16px 的大范围模糊），太重了。 */
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.85),
-    0 1px 5px rgba(0, 0, 0, 0.7),
-    0 0 16px rgba(0, 0, 0, 0.45);
+    0 0 2px rgba(0, 0, 0, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.32);
   transition: color 0.3s ease;
 }
 

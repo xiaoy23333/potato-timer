@@ -10,8 +10,11 @@ screenshots/
 smoke-*.log
 smoke-*.err
 
-# 与本项目无关：改 DSH 输入框快捷键用的脚本
+# 与本项目无关：改 DSH 输入框快捷键 / 验签用的脚本与备份，别混进番茄钟的仓库
 patch-enter-key.ps1
+verify-chain.ps1
+chain.test.js
+chain.test.js.orig
 
 # 系统 / 编辑器
 Thumbs.db

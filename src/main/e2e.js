@@ -504,11 +504,18 @@ async function run(ctx) {
         };
       })()`,
     );
+    // 颜色要跟「配置里写的」一致 —— 不能写死默认值，因为用户可能自己改过颜色
+    const hexToRgbCss = (hex) => {
+      const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || ''));
+      return m ? `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)})` : null;
+    };
+    const floatCfgColor = await js(wm.main, `window.pomodoro.getConfig().then((c) => c.floatWindow.color)`);
+
     check('小浮窗只显示时间', /^\d{2}:\d{2}$/.test(floatDom.text), floatDom.text);
     check(
-      '小浮窗倒计时颜色跟随配置（默认番茄红 #f4664f）',
-      floatDom.color === 'rgb(244, 102, 79)',
-      `${floatDom.cssVar} → ${floatDom.color}`,
+      '小浮窗倒计时颜色跟随配置',
+      floatDom.color === hexToRgbCss(floatCfgColor),
+      `配置 ${floatCfgColor} → 实际渲染 ${floatDom.color}`,
     );
 
     // 改颜色要立刻生效到小浮窗
@@ -517,11 +524,14 @@ async function run(ctx) {
     const recolored = await js(wm.float, `getComputedStyle(document.getElementById('time')).color`);
     check('改小浮窗颜色会立刻生效', recolored === 'rgb(0, 255, 136)', recolored);
 
-    // 改回默认，免得影响后面的截图与断言
-    await js(wm.main, `window.pomodoro.setConfig({ floatWindow: { color: '#f4664f' } })`);
+    // 恢复成用户原本的颜色，免得影响后面的截图与断言
+    await js(
+      wm.main,
+      `window.pomodoro.setConfig({ floatWindow: { color: ${JSON.stringify(floatCfgColor)} } })`,
+    );
     await wait(400);
     const restoredColor = await js(wm.float, `getComputedStyle(document.getElementById('time')).color`);
-    check('颜色改回默认也立刻生效', restoredColor === 'rgb(244, 102, 79)', restoredColor);
+    check('颜色改回去也立刻生效', restoredColor === hexToRgbCss(floatCfgColor), restoredColor);
 
     const glowDom = await js(
       wm.glow,
@@ -603,6 +613,15 @@ async function run(ctx) {
     check('滑块初始在左端', popupDom.knobLeft === '4px', popupDom.knobLeft);
 
     // ————— 6. 截图 —————
+    // 截图和像素差分要在**确定的设置**下做：用户可能把光效调暗或调短，
+    // 那会让「边缘变蓝」这类阈值失准。这里先钉住一套已知设置，做完再还原。
+    const glowBackup = await js(wm.main, `window.pomodoro.getConfig().then((c) => c.glow)`);
+    await js(
+      wm.main,
+      `window.pomodoro.setConfig({ glow: { color: '#4fc3f7', intensity: 1, flashSeconds: 1.6 } })`,
+    );
+    await wait(400);
+
     // 光效现在只闪一次、闪完自己消失，所以每次要抓光效的图都要先重播一次闪光
     const playGlow = async () => {
       if (!wm.glow.webContents.isDestroyed()) wm.glow.webContents.send('glow:play');
@@ -648,6 +667,13 @@ async function run(ctx) {
       Number(glowOpacity) === 0,
       `闪光结束后 opacity=${glowOpacity}`,
     );
+
+    // 还原用户原本的光效设置
+    await js(
+      wm.main,
+      `window.pomodoro.setConfig({ glow: ${JSON.stringify(glowBackup)} })`,
+    );
+    await wait(300);
     if (popupShot) {
       const stats = alphaStats(popupShot);
       check('弹窗卡片确实画出来了（不透明像素）', stats.edge > 0 || stats.center > 0, JSON.stringify(stats));
