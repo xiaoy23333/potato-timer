@@ -46,6 +46,7 @@ const el = {
   glowFlashText: $('glowFlashText'),
   floatEnabled: $('floatEnabled'),
   floatDraggable: $('floatDraggable'),
+  floatColor: $('floatColor'),
   autoLaunch: $('autoLaunch'),
   btnResetConfig: $('btnResetConfig'),
 };
@@ -234,6 +235,7 @@ function fillForm(c) {
 
   el.floatEnabled.checked = c.floatWindow.enabled;
   el.floatDraggable.checked = c.floatWindow.draggable;
+  setValue(el.floatColor, c.floatWindow.color);
   el.autoLaunch.checked = c.autoLaunch;
 }
 
@@ -339,6 +341,9 @@ el.floatEnabled.addEventListener('change', async () => {
 });
 el.floatDraggable.addEventListener('change', async () => {
   await patch({ floatWindow: { ...config.floatWindow, draggable: el.floatDraggable.checked } });
+});
+el.floatColor.addEventListener('change', async () => {
+  await patch({ floatWindow: { ...config.floatWindow, color: el.floatColor.value } });
 });
 el.autoLaunch.addEventListener('change', () => patch({ autoLaunch: el.autoLaunch.checked }));
 

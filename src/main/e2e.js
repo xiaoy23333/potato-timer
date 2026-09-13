@@ -493,8 +493,35 @@ async function run(ctx) {
     );
     check('录制结束后按钮文案复位', /Ctrl/.test(recGuard.afterText), recGuard.afterText);
 
-    const floatDom = await js(wm.float, `document.getElementById('time').textContent`);
-    check('小浮窗只显示时间', /^\d{2}:\d{2}$/.test(floatDom), floatDom);
+    const floatDom = await js(
+      wm.float,
+      `(() => {
+        const t = document.getElementById('time');
+        return {
+          text: t.textContent,
+          color: getComputedStyle(t).color,
+          cssVar: getComputedStyle(document.documentElement).getPropertyValue('--float-color').trim(),
+        };
+      })()`,
+    );
+    check('小浮窗只显示时间', /^\d{2}:\d{2}$/.test(floatDom.text), floatDom.text);
+    check(
+      '小浮窗倒计时颜色跟随配置（默认番茄红 #f4664f）',
+      floatDom.color === 'rgb(244, 102, 79)',
+      `${floatDom.cssVar} → ${floatDom.color}`,
+    );
+
+    // 改颜色要立刻生效到小浮窗
+    await js(wm.main, `window.pomodoro.setConfig({ floatWindow: { color: '#00ff88' } })`);
+    await wait(500);
+    const recolored = await js(wm.float, `getComputedStyle(document.getElementById('time')).color`);
+    check('改小浮窗颜色会立刻生效', recolored === 'rgb(0, 255, 136)', recolored);
+
+    // 改回默认，免得影响后面的截图与断言
+    await js(wm.main, `window.pomodoro.setConfig({ floatWindow: { color: '#f4664f' } })`);
+    await wait(400);
+    const restoredColor = await js(wm.float, `getComputedStyle(document.getElementById('time')).color`);
+    check('颜色改回默认也立刻生效', restoredColor === 'rgb(244, 102, 79)', restoredColor);
 
     const glowDom = await js(
       wm.glow,
