@@ -235,6 +235,40 @@ public static class DshOsClick {
   return { count, px, py };
 }
 
+/**
+ * 沿四条边量「差分强度随离边缘距离的变化」。
+ * 用来回答：光效到底有没有缺最外圈？（需求方截图里看起来缺了一圈）
+ */
+function edgeDiffProfile(before, after) {
+  const sa = before.getSize();
+  const sb = after.getSize();
+  if (sa.width !== sb.width || sa.height !== sb.height) return null;
+  const W = sa.width;
+  const H = sa.height;
+  const a = before.toBitmap();
+  const b = after.toBitmap();
+
+  const diff = (x, y) => {
+    const i = (y * W + x) * 4;
+    return Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+  };
+
+  const rows = [30, 40, 50, 60, 70].map((k) => Math.round((H * k) / 100));
+  const cols = [30, 40, 50, 60, 70].map((k) => Math.round((W * k) / 100));
+
+  return [0, 2, 4, 8, 14, 22, 32, 48, 70].map((dist) => {
+    const dl = Math.min(dist, W - 1);
+    const dh = Math.min(dist, H - 1);
+    return {
+      dist,
+      left: rows.reduce((s, r) => s + diff(dl, r), 0) / rows.length,
+      right: rows.reduce((s, r) => s + diff(W - 1 - dl, r), 0) / rows.length,
+      top: cols.reduce((s, c) => s + diff(c, dh), 0) / cols.length,
+      bottom: cols.reduce((s, c) => s + diff(c, H - 1 - dh), 0) / cols.length,
+    };
+  });
+}
+
 async function captureDesktop(fileName) {
   try {
     const display = screen.getPrimaryDisplay();
@@ -704,6 +738,25 @@ async function run(ctx) {
         diff !== null && diff > 10,
         `区域平均像素差 ${diff === null ? 'n/a' : diff.toFixed(1)}，亮度 ${lumaBefore.toFixed(1)} → ${lumaAfter.toFixed(1)}`,
       );
+
+      // 光效有没有缺最外圈：逐像素量离四条边的距离 → 差分强度
+      const profile = edgeDiffProfile(desktopBefore, desktopShot);
+      if (profile) {
+        const line = profile
+          .map(
+            (p) =>
+              `${p.dist}px: 左${Math.round(p.left)} 右${Math.round(p.right)} 上${Math.round(p.top)} 下${Math.round(p.bottom)}`,
+          )
+          .join('  |  ');
+        console.log(`  [光效边缘剖面] ${line}`);
+        const at0 = Math.min(profile[0].left, profile[0].right, profile[0].top, profile[0].bottom);
+        const inner = Math.max(...profile.slice(2).map((p) => Math.min(p.left, p.right, p.top, p.bottom)));
+        check(
+          '光效铺到了屏幕最外圈（没有缺一圈）',
+          at0 >= inner * 0.5,
+          `最外圈差分=${Math.round(at0)}，往内峰值=${Math.round(inner)}`,
+        );
+      }
     }
 
     // ————— 拖到一半不该触发（走真实输入管线）—————
