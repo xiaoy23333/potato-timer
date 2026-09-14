@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "src/renderer/glow.html"
+        ],
+        "createdAt": "2026-09-14T00:52:10.134Z",
+        "reason": "淡蓝色四周向内光效是本产品的招牌，需求方明确要求不许改动（见 PRODUCT.md 品牌承诺）。这里的有色光晕不是'AI 味'，是产品本体。"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "src/renderer/popup.html"
+        ],
+        "createdAt": "2026-09-14T00:52:26.373Z",
+        "reason": "误报：检测器看到 .slider 里的子元素 inset:0 就判为贴边，但那两个子元素一个是 .fill（纯背景填充层，本来就要铺满），一个是 .label（flex 居中，文字并不贴边，见 screenshots/01-提醒弹窗.png）。"
+      }
+    ]
+  }
+}

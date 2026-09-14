@@ -108,32 +108,51 @@ body {
   display: none;
 }
 
-/* ————————————————— 主视图 ————————————————— */
+/* ============================================================================
+ * 主视图 —— 一只钟，不是一叠居中的卡片
+ *
+ * 三段式网格：状态条 → 表盘 → 控制区。
+ * 表盘那一格是 minmax(0, 1fr)，它吃掉所有剩余高度，所以窗口拉大时长大的
+ * 是那只钟本身，而不是把空白摊在上下两头（旧版固定 216px，窗口一拉大
+ * 界面就缩成中间一小坨）。
+ *
+ * 层级：表盘是主角，其余四层依次让位 ——
+ *   表盘（大号数字 + 进度环）> 主操作 > 阶段/轮次 > 状态句 > 快捷键提示
+ * ========================================================================== */
 
 .page-main {
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 4px 22px 22px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: 10px;
+  padding: 0 22px 16px;
 }
 
-.phase-wrap {
+/* —— 状态条：左＝阶段，右＝轮次 ——
+   全页只有这一行是贴边的。它给居中的表盘当坐标：一眼扫过去先落在左上角的
+   阶段，再落到中间的钟，最后落到下方的操作。 */
+.statusbar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 9px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 26px;
 }
 
 .phase-badge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 15px;
+  height: 24px;
+  /* 左右内边距故意不对称：letter-spacing 在最后一个字后面也留了一份字距，
+     不补回来的话「专注」在胶囊里会整体偏左 1px。阶段名都是两个字，所以
+     这个 4px 的补偿是准的。 */
+  padding: 0 10px 0 14px;
   border-radius: 999px;
   background: var(--focus-soft);
   color: var(--focus);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 2px;
+  white-space: nowrap;
   transition:
     background 0.3s ease,
     color 0.3s ease;
@@ -144,32 +163,79 @@ body {
   color: var(--rest-deep);
 }
 
-.dots {
-  display: flex;
-  gap: 7px;
+/* 延后中不是"正在专注"，是一个等待态。这一刻把主角红整个收起来 ——
+   徽章、刻度全部退成中性，屏幕上只剩"还要等多久"这一件事。 */
+.phase-badge.is-muted {
+  background: var(--ghost);
+  color: var(--ink-soft);
 }
 
-.dots i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.round-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.round-text {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 轮次刻度：一轮一小节。这里用"刻度"而不是圆点 ——
+   轮次本来就是有先后顺序的，有顺序的东西就该长得像刻度；
+   而且 4px 的小节比 7px 的圆点更容易一眼数清。 */
+.cycle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cycle i {
+  width: 13px;
+  height: 4px;
+  border-radius: 2px;
   background: var(--line-strong);
   transition: background 0.25s ease;
 }
 
-.dots i.is-done {
+.cycle i.is-done {
   background: var(--focus);
 }
 
-/* ————————— 环形进度 ————————— */
+/* 休息时把刻度也交给配角色。不这么做就会出现
+   「徽章是蓝的、进度刻度和环是红的」这种自相矛盾。 */
+.cycle.is-break i.is-done {
+  background: var(--rest-strong);
+}
+
+/* 延后中：已完成的那几格退成中性。它们记的是"过去"，不该在等待时还红着。 */
+.cycle.is-muted i.is-done {
+  background: var(--ink-faint);
+}
+
+/* ————————— 表盘 ————————— */
+
+/* container-type: size 让里面的字号能按表盘的实际尺寸算（cqmin），
+   这样窗口变大时是"整只钟等比放大"，而不是圆变大了、数字没变。 */
+.dial {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
 
 .ring-wrap {
   position: relative;
-  width: 216px;
-  height: 216px;
+  width: min(100cqw, 100cqh, 460px);
+  aspect-ratio: 1;
+  /* 自己也是容器：.time 的 cqmin 取的是表盘尺寸，不是外面那一格 */
+  container-type: size;
 }
 
 .ring {
+  display: block;
   width: 100%;
   height: 100%;
   transform: rotate(-90deg);
@@ -177,14 +243,18 @@ body {
 
 .ring-track {
   fill: none;
-  stroke: var(--bg-deep);
-  stroke-width: 13;
+  /* 颜色由 JS 按当前状态写进来：同色相的浅一档（color-mix 18%）。
+     试过用中性的 --line-strong，结果那圈灰读起来像"另一只灰色的环"，
+     和进度弧抢戏；同色相的浅调才读得出"这就是红环还没走到的那一段"。 */
+  stroke-width: 9;
 }
 
 .ring-progress {
   fill: none;
   stroke: var(--focus);
-  stroke-width: 13;
+  /* 9 而不是原来的 13：环从 216px 长到 300px 上下了，同样的比例乘上更大的
+     直径会变成一条 18px 宽的色带，把整页压住。细一点才像仪表，不像甜甜圈。 */
+  stroke-width: 9;
   stroke-linecap: round;
   /* 首屏默认画成"空环"：2πr（r=96）= 603.19。
      不写这两行的话，renderState() 跑起来之前 SVG 会先画成一个整整的实心红环，
@@ -199,89 +269,116 @@ body {
 .ring-center {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  display: grid;
+  place-items: center;
 }
 
+/* 环里只有时间。原来这里还塞了一行状态句，和徽章、和 "本轮 40 分钟" 三处
+   都在说同一件事；现在环只管"这一轮还剩多少"，状态句搬到环下面。
+   字号按表盘算：360 宽的窗口里是 65px，560 宽时封顶 112px —— 实测最宽的
+   "180:00"（专注上限 180 分钟）在最小窗口下也只占内圈的 81%，不会溢出。 */
 .time {
   font-family: var(--font-num);
-  font-size: 54px;
+  font-size: min(26cqmin, 112px);
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   line-height: 1;
 }
 
+/* 延后中不再是"专注"，数字交给配角色。字号不变 ——
+   否则一进延后状态整只钟会跳一下。 */
 .time.is-snooze {
-  font-size: 44px;
   color: var(--rest-deep);
 }
 
-.status {
-  font-size: 12.5px;
-  color: var(--ink-faint);
-  text-align: center;
-  max-width: 170px;
-  line-height: 1.45;
-}
-
-/* ————————— 控制按钮 ————————— */
+/* ————————— 控制区 ————————— */
 
 .controls {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+}
+
+/* 状态句只回答一个问题：接下来会发生什么。
+   不再复述环里已经写着的时间。高度固定，切换状态时按钮不会上下跳。 */
+.status {
+  min-height: 18px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-faint);
+  text-align: center;
 }
 
 .btn {
   transition:
     transform 0.1s ease,
     background 0.15s ease,
+    border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
+/* 主按钮的两副面孔 ——
+   待开始时是实心番茄红：那一刻它是全屏唯一需要你去"找"的东西。
+   一旦跑起来，实心红让给进度环（红只准同时出现在一处），按钮退成描边。
+   于是"点一下开始"这个动作看上去就是把红色从按钮搬进了环里。 */
 .btn-primary {
   width: 100%;
   height: 46px;
   border-radius: 13px;
-  background: var(--focus);
-  color: var(--on-color);
+  border: 1.5px solid var(--focus);
+  background: transparent;
+  color: var(--focus-deep);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 1px;
+}
+
+.btn-primary:not(.is-solid):hover {
+  background: var(--focus-soft);
+}
+
+.btn-primary:not(.is-solid):active {
+  transform: translateY(1px);
+}
+
+.btn-primary.is-solid {
+  background: var(--focus);
+  color: var(--on-color);
   box-shadow: var(--shadow-focus);
 }
 
-.btn-primary:hover {
+.btn-primary.is-solid:hover {
   box-shadow: var(--shadow-focus-hover);
 }
 
-.btn-primary:active {
+.btn-primary.is-solid:active {
   transform: translateY(1px);
   box-shadow: var(--shadow-focus-active);
 }
 
+/* 次操作不给底色。跳过 / 重置是偶尔才按一下的事，
+   给它们和主操作一样大的色块，等于每屏摆两个"按钮区"。 */
 .controls-sub {
   display: flex;
-  gap: 10px;
+  justify-content: center;
+  gap: 6px;
 }
 
 .btn-ghost {
-  flex: 1 1 0;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--ghost);
+  height: 32px;
+  padding: 0 18px;
+  border-radius: 9px;
+  background: transparent;
   color: var(--ink-soft);
   font-size: 13px;
 }
 
 .btn-ghost:hover {
   background: var(--hover);
+  color: var(--ink);
 }
 
 .btn-ghost:active {
@@ -289,26 +386,35 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.42;
+  opacity: 0.4;
   cursor: default;
 }
 
 .btn:disabled:hover {
-  background: var(--ghost);
+  background: transparent;
+  color: var(--ink-soft);
 }
 
 .btn:disabled:active {
   transform: none;
 }
 
+/* 设置面板里的整宽次要按钮仍然要有底色。
+   主界面那两个（跳过 / 重置）去掉底色是有意的，因为主按钮就在旁边；
+   设置页整页都是表单，没有底色的纯文字会被读成说明文字而不是按钮。 */
 .btn-ghost.wide {
-  flex: 0 0 auto;
   width: 100%;
+  background: var(--ghost);
+}
+
+.btn-ghost.wide:hover {
+  background: var(--hover);
 }
 
 .hint {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--ink-faint);
+  text-align: center;
   letter-spacing: 0.3px;
 }
 

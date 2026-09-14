@@ -10,8 +10,10 @@ const el = {
   pageMain: $('pageMain'),
   pageSettings: $('pageSettings'),
   phaseBadge: $('phaseBadge'),
+  roundText: $('roundText'),
   dots: $('dots'),
   ringProgress: $('ringProgress'),
+  ringTrack: document.querySelector('.ring-track'),
   time: $('time'),
   status: $('status'),
   btnPrimary: $('btnPrimary'),
@@ -130,33 +132,60 @@ function accelFromEvent(event) {
 
 // ————————————————————— 主视图渲染 —————————————————————
 
-function renderDots(count, done) {
-  if (el.dots.childElementCount !== count) {
+/**
+ * 轮次刻度：一格一轮，点亮的格数 = 已完成的轮数。
+ */
+function renderCycle(every, done, isBreak) {
+  if (el.dots.childElementCount !== every) {
     el.dots.replaceChildren(
-      ...Array.from({ length: count }, () => document.createElement('i')),
+      ...Array.from({ length: every }, () => document.createElement('i')),
     );
   }
-  Array.from(el.dots.children).forEach((dot, index) => {
-    dot.classList.toggle('is-done', index < done);
+  Array.from(el.dots.children).forEach((mark, index) => {
+    mark.classList.toggle('is-done', index < done);
   });
+  // 休息时点亮色换成配角色，否则会跟蓝色徽章打架
+  el.dots.classList.toggle('is-break', isBreak);
 }
 
+/**
+ * 「第 N / 4 轮」里的 N ＝ 你此刻身处的（或刚刚结束的）那一轮。
+ *
+ * 刻意不写「已完成 N / 4 轮」——那和右边那排刻度说的是同一件事，
+ * 两处并排写同一句话，等于哪一处都没说。这里说的是"我在第几轮"，
+ * 刻度说的是"完成了几轮"，两个数互补而不是重复。
+ */
+function currentRound(s, doneCount) {
+  if (s.status === 'idle') return 1;
+  if (s.phase !== 'focus') return Math.max(1, doneCount); // 休息中：刚结束的那一轮
+  if (s.status === 'finished' || s.status === 'snoozed') return Math.max(1, doneCount);
+  return Math.min(doneCount + 1, s.longBreakEvery); // 专注进行中
+}
+
+/**
+ * 环下面那一行状态句，只回答一个问题：接下来会发生什么。
+ *
+ * 旧版这里写的是「准备开始 · 本轮 40 分钟」「第 2 / 4 轮」——
+ * 这两件事环里的大号数字和右上角的轮次都已经写着，同一句话说三遍。
+ * 现在改成说"下一段是什么、多长"，那是页面上原本缺的那条信息。
+ */
 function statusText(s) {
   switch (s.status) {
     case 'idle':
-      return `准备开始 · 本轮 ${window.formatDuration(s.focusSeconds)}`;
+      return '准备开始';
     case 'paused':
       return '已暂停';
     case 'snoozed':
-      return `延后中 · ${window.fmtTime(s.snoozeRemainingMs)} 后再次提醒`;
+      return '延后中 · 到点会再提醒一次';
     case 'finished':
-      return '专注结束 · 等你在提醒弹窗里处理';
-    default:
-      return s.phase === 'focus'
-        ? `第 ${s.cycleDone + 1} / ${s.longBreakEvery} 轮`
-        : s.phase === 'short'
-          ? '短休一下'
-          : '长休一下';
+      return '专注结束 · 在提醒弹窗里处理';
+    default: {
+      if (s.phase !== 'focus') return '休息结束 · 自动开始下一轮专注';
+      const seconds = s.nextPhaseLabel === '长休' ? s.longBreakSeconds : s.shortBreakSeconds;
+      return seconds > 0
+        ? `本轮结束 · ${s.nextPhaseLabel} ${window.formatDuration(seconds)}`
+        : '本轮结束 · 直接开始下一轮专注';
+    }
   }
 }
 
@@ -177,29 +206,55 @@ function primaryLabel(s) {
 function renderState(s) {
   state = s;
   const isFocus = s.phase === 'focus';
+  const snoozing = s.status === 'snoozed';
 
   el.phaseBadge.textContent = s.phaseLabel;
   el.phaseBadge.classList.toggle('is-break', !isFocus);
-  // 刚好跑满一轮循环（第 4 轮）时 cycleDone 会回到 0，但那一刻应该显示「全亮」，
-  // 否则用户刚完成一整轮却看到进度点全灭
-  const cycleDone = s.completedFocus > 0 && s.cycleDone === 0 ? s.longBreakEvery : s.cycleDone;
-  renderDots(s.longBreakEvery, cycleDone);
 
-  el.ringProgress.style.stroke = isFocus ? 'var(--focus)' : 'var(--break)';
-  const total = s.totalMs > 0 ? s.totalMs : 1;
-  const progress = Math.min(1, Math.max(0, 1 - s.remainingMs / total));
+  // 刚好跑满一轮循环（第 4 轮）时 cycleDone 会回到 0，但那一刻应该显示「全亮」，
+  // 否则用户刚完成一整轮却看到刻度全灭
+  const doneCount = s.completedFocus > 0 && s.cycleDone === 0 ? s.longBreakEvery : s.cycleDone;
+  renderCycle(s.longBreakEvery, doneCount, !isFocus);
+  el.roundText.textContent = `第 ${currentRound(s, doneCount)} / ${s.longBreakEvery} 轮`;
+
+  // 延后中把徽章和刻度一起退成中性色：那一刻屏幕上只该有一种"现在"的颜色，
+  // 就是环和数字的等待蓝。否则红徽章 + 红刻度 + 蓝环同时出现，四种信号打架。
+  el.phaseBadge.classList.toggle('is-muted', snoozing);
+  el.dots.classList.toggle('is-muted', snoozing);
+
+  // 进度环的颜色由「这一段处于什么状态」决定，不是由阶段决定：
+  //   专注中 → 主角红 ｜ 暂停 → 中性墨 ｜ 休息 / 延后 → 配角蓝
+  // 休息用的是 --rest-strong 而不是 --rest：--rest（#4fc3f7）是光效色，铺在
+  // 浅底上只有 1.8:1，做光晕没问题，做十几像素宽的实心弧会糊进背景里。
+  const arcColor = !isFocus || snoozing
+    ? 'var(--rest-strong)'
+    : s.status === 'paused'
+      ? 'var(--ink-faint)'
+      : 'var(--focus)';
+  el.ringProgress.style.stroke = arcColor;
+  // 轨道是"同一只环还没走到的那一段"，所以取同一个色相的浅调，
+  // 而不是一条中性的灰环 —— 灰环会变成一只和进度弧抢戏的独立物体。
+  el.ringTrack.style.stroke = `color-mix(in srgb, ${arcColor} 18%, transparent)`;
+
+  // 延后中的进度必须按「延后的总时长」算。旧版拿 snoozeRemainingMs 去除以
+  // 专注总时长（40 分钟），画出来是一条几乎满圈的弧，跟屏幕上那个 3:20 对不上。
+  const total = (snoozing ? s.snoozeSeconds * 1000 : s.totalMs) || 1;
+  const remaining = snoozing ? s.snoozeRemainingMs : s.remainingMs;
+  const progress = Math.min(1, Math.max(0, 1 - remaining / total));
   el.ringProgress.style.strokeDasharray = String(RING_CIRC);
   el.ringProgress.style.strokeDashoffset = String(RING_CIRC * (1 - progress));
 
-  const snoozing = s.status === 'snoozed';
   el.time.textContent = window.fmtTime(snoozing ? s.snoozeRemainingMs : s.remainingMs);
   el.time.classList.toggle('is-snooze', snoozing);
 
   el.status.textContent = statusText(s);
   el.btnPrimary.textContent = primaryLabel(s);
+  // 实心红只在「待开始」出现：那一刻它是全屏唯一需要被找到的东西。
+  // 一旦计时跑起来，实心红就让给进度环（红只准同时出现在一处）。
+  el.btnPrimary.classList.toggle('is-solid', s.status === 'idle');
   // 待开始时没有「当前段」可跳过，按钮直接置灰（计时器里也有同样的守卫）
   el.btnSkip.disabled = s.status === 'idle';
-  el.hint.textContent = `提醒时的延后快捷键 ${prettyHotkey(config ? config.hotkey : 'Control+Alt+P')}`;
+  el.hint.textContent = `延后快捷键 ${prettyHotkey(config ? config.hotkey : 'Control+Alt+P')}`;
 }
 
 // ————————————————————— 设置面板渲染 —————————————————————

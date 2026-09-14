@@ -130,6 +130,24 @@ check('标题栏图标 ink-soft / 画布', rgb('ink-soft'), BG, 3.0, '图标，3
 check('焦点环 rest-deep / 画布', rgb('rest-deep'), BG, 3.0, '焦点指示器，3:1');
 check('开关打开态 rest-strong / 画布', rgb('rest-strong'), BG, 3.0, '控件，3:1');
 
+// —— 进度环：它是"理解还剩多少"的图形对象，弧线要过 3:1 ——
+// （环里的大号数字也说了同一件事，但两条路都该走得通）
+check('进度弧 focus / 画布', rgb('focus'), BG, 3.0, '专注中，3:1');
+check('进度弧 rest-strong / 画布', rgb('rest-strong'), BG, 3.0, '休息 / 延后，3:1');
+check('进度弧 ink-faint / 画布', rgb('ink-faint'), BG, 3.0, '已暂停，3:1');
+
+// —— 主按钮的描边态（计时跑起来之后的那副面孔）——
+check('主按钮描边态文字 focus-deep / 画布', rgb('focus-deep'), BG, 4.5, '15px 粗体');
+check('主按钮描边 focus / 画布', rgb('focus'), BG, 3.0, '控件边界，3:1');
+
+// —— 状态条右侧的轮次刻度 ——
+check('轮次刻度（已完成）focus / 画布', rgb('focus'), BG, 3.0, '4px 小节，3:1');
+check('轮次刻度（休息）rest-strong / 画布', rgb('rest-strong'), BG, 3.0, '4px 小节，3:1');
+check('轮次刻度（延后中性）ink-faint / 画布', rgb('ink-faint'), BG, 3.0, '4px 小节，3:1');
+
+const ghostOnBg = over(rgb('ink'), 0.055, BG);
+check('延后态徽章 ink-soft / ghost⊕画布', rgb('ink-soft'), ghostOnBg, 4.5, '12.5px 粗体');
+
 const ghostRow = over(rgb('ink'), 0.055, CARD);
 check('次级按钮文字 ink-soft / ghost⊕卡片', rgb('ink-soft'), ghostRow, 4.5);
 

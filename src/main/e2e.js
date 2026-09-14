@@ -442,16 +442,27 @@ async function run(ctx) {
         time: document.getElementById('time').textContent,
         badge: document.getElementById('phaseBadge').textContent,
         primary: document.getElementById('btnPrimary').textContent,
+        primarySolid: document.getElementById('btnPrimary').classList.contains('is-solid'),
+        round: document.getElementById('roundText').textContent,
         hint: document.getElementById('hint').textContent,
         dots: document.getElementById('dots').childElementCount,
         dasharray: getComputedStyle(document.getElementById('ringProgress')).strokeDasharray,
+        ringStroke: getComputedStyle(document.getElementById('ringProgress')).stroke,
       }))()`,
     );
     check('主窗口倒计时按 MM:SS 渲染', /^\d{2}:\d{2}$/.test(mainDom.time), mainDom.time);
     check('主窗口阶段徽章为「专注」', mainDom.badge === '专注', mainDom.badge);
     check('主窗口主按钮为「开始专注」', mainDom.primary === '开始专注', mainDom.primary);
-    check('主窗口轮次圆点数量 = 长休间隔', mainDom.dots === 4, String(mainDom.dots));
+    check('待开始时主按钮是实心红（全屏唯一需要被找到的东西）', mainDom.primarySolid, String(mainDom.primarySolid));
+    check('主窗口轮次刻度数量 = 长休间隔', mainDom.dots === 4, String(mainDom.dots));
+    check('主窗口轮次文字为「第 1 / 4 轮」', mainDom.round === '第 1 / 4 轮', mainDom.round);
     check('主窗口提示里带出快捷键', /Ctrl\s*\+\s*Alt\s*\+\s*P/.test(mainDom.hint), mainDom.hint);
+    // 回归：曾写成不存在的 var(--break)，未定义的 var() 让 stroke 退回 none
+    check(
+      '待开始时进度环描边色可解析（不是 none）',
+      mainDom.ringStroke !== 'none' && mainDom.ringStroke !== '',
+      mainDom.ringStroke,
+    );
 
     // ————— 设置面板的两个状态机 —————
 
@@ -807,6 +818,53 @@ async function run(ctx) {
     check('进入下一轮后光效熄灭', !wm.glow.isVisible());
     check('弹窗收起后小浮窗回来', wm.float.isVisible());
 
+    // ————— 7b. 休息段的进度环必须真的画出来 —————
+    // 回归：index.js 里曾经写的是 var(--break)，而主题里只有 --rest。
+    // 未定义的 var() 会让 stroke 退回初始值 none —— 休息时整条进度弧凭空消失，
+    // 而当时所有断言都只查了 stroke-dasharray，谁都没发现。
+    // 注意要等一会儿再量：休息刚开始的瞬间进度就是 0，弧长为 0 是对的。
+    await wait(1200);
+    const breakRing = await js(
+      wm.main,
+      `(() => {
+        const p = document.getElementById('ringProgress');
+        return {
+          stroke: getComputedStyle(p).stroke,
+          offset: parseFloat(p.style.strokeDashoffset),
+          circ: parseFloat(p.style.strokeDasharray),
+        };
+      })()`,
+    );
+    check(
+      '休息时进度环有颜色（不是 none / 透明）',
+      breakRing.stroke !== 'none' && !/rgba?\([^)]*,\s*0\s*\)/.test(breakRing.stroke),
+      breakRing.stroke,
+    );
+    check(
+      '休息中途进度环画出了可见的弧长',
+      breakRing.offset < breakRing.circ * 0.95,
+      `offset=${breakRing.offset.toFixed(1)} / ${breakRing.circ.toFixed(1)}`,
+    );
+
+    // 休息时轮次刻度也得跟着换成配角色，不能还是专注红
+    const breakCycle = await js(
+      wm.main,
+      `(() => {
+        const dots = document.getElementById('dots');
+        const done = dots.querySelector('i.is-done');
+        return {
+          isBreak: dots.classList.contains('is-break'),
+          color: done ? getComputedStyle(done).backgroundColor : '',
+        };
+      })()`,
+    );
+    check('休息时轮次刻度切到配角色', breakCycle.isBreak, String(breakCycle.isBreak));
+    check(
+      '休息时已完成的刻度不再是专注红',
+      breakCycle.color !== '' && !/212,\s*44,\s*34/.test(breakCycle.color),
+      breakCycle.color,
+    );
+
     // ————— 8. 休息结束自动开始下一轮专注 —————
     const backToFocus = await waitFor(() => timer.phase === 'focus' && timer.status === STATUS.RUNNING, 12000);
     check('休息结束自动开始下一轮专注', backToFocus, `${timer.phase}/${timer.status}`);
@@ -869,7 +927,62 @@ async function run(ctx) {
     await wait(200);
     check('全局快捷键触发的延后同样生效', timer.status === STATUS.SNOOZED, timer.status);
 
+    // ————— 10b. 延后中的进度弧要按「延后的总时长」算 —————
+    // 回归：index.js 曾经拿 snoozeRemainingMs 去除以 s.totalMs（专注总时长），
+    // 5 分钟的延后配上 40 分钟的专注，画出来是一条几乎满圈的弧，
+    // 和屏幕上那个 3:20 完全对不上。这里用"走到一半就该画一半"来守。
+    applyFast({ snoozeSeconds: 6 });
+    timer.reset();
+    await wait(120);
+    timer.start();
+    await waitFor(() => timer.status === STATUS.FINISHED, 12000);
+    timer.snooze();
+
+    const arcAt = () =>
+      js(
+        wm.main,
+        `(() => {
+          const p = document.getElementById('ringProgress');
+          return {
+            offset: parseFloat(p.style.strokeDashoffset),
+            circ: parseFloat(p.style.strokeDasharray),
+            text: document.getElementById('time').textContent,
+          };
+        })()`,
+      );
+    await wait(120);
+    const arcStart = await arcAt();
+    await wait(2900);
+    const arcMid = await arcAt();
+
+    check(
+      '延后刚开始时进度弧几乎全空',
+      arcStart.offset > arcStart.circ * 0.9,
+      `offset=${arcStart.offset.toFixed(1)} / ${arcStart.circ.toFixed(1)}，屏幕=${arcStart.text}`,
+    );
+
+    // 这里不对着挂钟断言，而是对着"屏幕自己说的话"断言：
+    // 环上的弧长和环里的数字是 renderState() 同一次调用写进去的，两者必须自洽。
+    // 按挂钟算会不稳 —— 状态每秒才广播一次，机器一忙就会差出去一秒。
+    // 关系是 offset ＝ 周长 × 剩余 / 总时长（offset 是"被藏起来"的那段，
+    // 藏得越多弧越长）。fmtTime 把毫秒四舍五入到秒，所以留 ±500ms 的余量。
+    const snoozeTotalMs = timer.snapshot().snoozeSeconds * 1000;
+    const shownSec = (() => {
+      const [m, s] = String(arcMid.text).split(':').map(Number);
+      return m * 60 + s;
+    })();
+    const offsetAt = (ms) => arcMid.circ * (Math.min(snoozeTotalMs, Math.max(0, ms)) / snoozeTotalMs);
+    const lo = offsetAt(shownSec * 1000 - 500);
+    const hi = offsetAt(shownSec * 1000 + 500);
+    check(
+      '延后中进度弧与环里的数字自洽（关键回归）',
+      arcMid.offset >= lo - arcMid.circ * 0.03 && arcMid.offset <= hi + arcMid.circ * 0.03,
+      `offset=${arcMid.offset.toFixed(1)}，屏幕 ${arcMid.text} ⇒ 期望 ${lo.toFixed(1)}~${hi.toFixed(1)}` +
+        `（旧版拿专注总时长当分母会画成 ${arcMid.circ.toFixed(1)}）`,
+    );
+
     // ————— 11. 跳过 / 重置 —————
+    applyFast();
     timer.reset();
     await wait(150);
     timer.start();

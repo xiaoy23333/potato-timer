@@ -43,33 +43,39 @@
     </header>
 
     <div class="stage">
-      <!-- ————————————— 主视图 ————————————— -->
+      <!-- ————————————— 主视图 —————————————
+           三段式：状态条（左阶段 / 右轮次）→ 表盘（吃掉剩余空间）→ 控制区。
+           中间那一格是整页的主角，尺寸跟着窗口走，不是写死的 216px。 -->
       <section class="page page-main" id="pageMain">
-        <div class="phase-wrap">
+        <div class="statusbar">
           <span class="phase-badge" id="phaseBadge">专注</span>
-          <div class="dots" id="dots"></div>
+          <span class="round-wrap">
+            <span class="round-text" id="roundText">第 1 / 4 轮</span>
+            <span class="cycle" id="dots"></span>
+          </span>
         </div>
 
-        <div class="ring-wrap">
-          <svg class="ring" viewBox="0 0 220 220" aria-hidden="true">
-            <circle class="ring-track" cx="110" cy="110" r="96" />
-            <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="96" />
-          </svg>
-          <div class="ring-center">
-            <div class="time" id="time">40:00</div>
-            <div class="status" id="status">准备开始</div>
+        <div class="dial">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 220 220" aria-hidden="true">
+              <circle class="ring-track" cx="110" cy="110" r="96" />
+              <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="96" />
+            </svg>
+            <div class="ring-center">
+              <div class="time" id="time">40:00</div>
+            </div>
           </div>
         </div>
 
         <div class="controls">
+          <div class="status" id="status">准备开始</div>
           <button class="btn btn-primary" id="btnPrimary" type="button">开始专注</button>
           <div class="controls-sub">
             <button class="btn btn-ghost" id="btnSkip" type="button">跳过</button>
             <button class="btn btn-ghost" id="btnReset" type="button">重置</button>
           </div>
+          <div class="hint" id="hint">延后快捷键 Ctrl + Alt + P</div>
         </div>
-
-        <div class="hint" id="hint">提醒时的延后快捷键 Ctrl + Alt + P</div>
       </section>
 
       <!-- ————————————— 设置面板 ————————————— -->
