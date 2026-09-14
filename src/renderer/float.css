@@ -8,14 +8,14 @@ body {
 }
 
 :root {
-  /* 倒计时文字颜色，由 float.js 从配置里写入；这里是兜底默认值 */
-  --float-color: #f4664f;
+  /* 倒计时文字颜色，由 float.js 从配置里写入；这里是兜底默认值（= 新的番茄红） */
+  --float-color: #d42c22;
 }
 
 .pill {
   height: 100%;
+  /* 背景已经是全透明的了，这里的圆角看不见，只作为将来加底时的预留 */
   border-radius: 18px;
-  /* 背景透明：只留时间本身，压一层文字阴影保证在任何壁纸上都看得清 */
   background: transparent;
   box-shadow: none;
   display: flex;
@@ -28,10 +28,10 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--float-color);
   /* 一圈很淡的阴影：够保证在任何壁纸上都看得清就行。
-     之前叠了三层（其中一层还是 16px 的大范围模糊），太重了。 */
+     阴影色从墨色推导（不用纯黑）—— 但这里要压的是"任意一张壁纸"，所以取墨的暗端。 */
   text-shadow:
-    0 0 2px rgba(0, 0, 0, 0.45),
-    0 1px 4px rgba(0, 0, 0, 0.32);
+    0 0 2px rgba(8, 20, 28, 0.5),
+    0 1px 4px rgba(8, 20, 28, 0.34);
   transition: color 0.3s ease;
 }
 

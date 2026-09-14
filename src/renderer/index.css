@@ -4,7 +4,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  background: var(--bg);
   color: var(--ink);
   overflow: hidden;
 }
@@ -37,8 +37,8 @@ body {
   position: absolute;
   inset: 3px 0 0 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff8b77, #d63f2b);
-  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.12);
+  background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--focus), white 24%), var(--focus-deep));
+  box-shadow: inset 0 -2px 3px rgba(16, 32, 42, 0.18);
 }
 
 .logo::after {
@@ -48,7 +48,7 @@ body {
   top: 0;
   width: 6px;
   height: 6px;
-  background: #43a047;
+  background: var(--leaf);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
@@ -80,13 +80,13 @@ body {
 }
 
 .tb-btn:hover {
-  background: rgba(30, 42, 69, 0.08);
+  background: var(--hover);
   color: var(--ink);
 }
 
 .tb-close:hover {
-  background: rgba(244, 102, 79, 0.14);
-  color: #d63f2b;
+  background: var(--focus-soft);
+  color: var(--focus-deep);
 }
 
 /* ————————————————— 页面容器 ————————————————— */
@@ -140,8 +140,8 @@ body {
 }
 
 .phase-badge.is-break {
-  background: var(--break-soft);
-  color: var(--accent-deep);
+  background: var(--rest-soft);
+  color: var(--rest-deep);
 }
 
 .dots {
@@ -153,7 +153,7 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(30, 42, 69, 0.15);
+  background: var(--line-strong);
   transition: background 0.25s ease;
 }
 
@@ -177,7 +177,7 @@ body {
 
 .ring-track {
   fill: none;
-  stroke: rgba(79, 195, 247, 0.16);
+  stroke: var(--bg-deep);
   stroke-width: 13;
 }
 
@@ -186,6 +186,11 @@ body {
   stroke: var(--focus);
   stroke-width: 13;
   stroke-linecap: round;
+  /* 首屏默认画成"空环"：2πr（r=96）= 603.19。
+     不写这两行的话，renderState() 跑起来之前 SVG 会先画成一个整整的实心红环，
+     启动瞬间闪一下满圈红。 */
+  stroke-dasharray: 603.19;
+  stroke-dashoffset: 603.19;
   transition:
     stroke-dashoffset 0.3s linear,
     stroke 0.4s ease;
@@ -213,7 +218,7 @@ body {
 
 .time.is-snooze {
   font-size: 44px;
-  color: var(--accent-deep);
+  color: var(--rest-deep);
 }
 
 .status {
@@ -244,21 +249,21 @@ body {
   width: 100%;
   height: 46px;
   border-radius: 13px;
-  background: linear-gradient(180deg, #58cbfa, #2fa9dd);
-  color: #ffffff;
+  background: var(--focus);
+  color: var(--on-color);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 1px;
-  box-shadow: 0 8px 20px rgba(33, 150, 201, 0.32);
+  box-shadow: var(--shadow-focus);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 10px 24px rgba(33, 150, 201, 0.42);
+  box-shadow: var(--shadow-focus-hover);
 }
 
 .btn-primary:active {
   transform: translateY(1px);
-  box-shadow: 0 4px 12px rgba(33, 150, 201, 0.3);
+  box-shadow: var(--shadow-focus-active);
 }
 
 .controls-sub {
@@ -270,13 +275,13 @@ body {
   flex: 1 1 0;
   height: 34px;
   border-radius: 10px;
-  background: rgba(30, 42, 69, 0.055);
+  background: var(--ghost);
   color: var(--ink-soft);
   font-size: 13px;
 }
 
 .btn-ghost:hover {
-  background: rgba(30, 42, 69, 0.1);
+  background: var(--hover);
 }
 
 .btn-ghost:active {
@@ -289,7 +294,7 @@ body {
 }
 
 .btn:disabled:hover {
-  background: rgba(30, 42, 69, 0.055);
+  background: var(--ghost);
 }
 
 .btn:disabled:active {
@@ -310,7 +315,7 @@ body {
 /* ————————————————— 设置面板 ————————————————— */
 
 .page-settings {
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  background: var(--bg);
 }
 
 .settings-head {
@@ -342,7 +347,7 @@ body {
 }
 
 .settings-body::-webkit-scrollbar-thumb {
-  background: rgba(30, 42, 69, 0.16);
+  background: var(--line-strong);
   border-radius: 4px;
 }
 
@@ -399,7 +404,7 @@ body {
   height: 30px;
   border-radius: 8px;
   border: 1px solid var(--line-strong);
-  background: #ffffff;
+  background: var(--card);
   text-align: center;
   font-family: var(--font-num);
   font-size: 14px;
@@ -409,7 +414,7 @@ body {
 }
 
 .field input[type='number']:focus {
-  border-color: var(--accent);
+  border-color: var(--rest);
 }
 
 .note {
@@ -425,7 +430,7 @@ input[type='range'] {
   width: 108px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(30, 42, 69, 0.14);
+  background: var(--line-strong);
   outline: none;
 }
 
@@ -434,10 +439,10 @@ input[type='range']::-webkit-slider-thumb {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--card);
   box-shadow:
-    0 0 0 1px rgba(79, 195, 247, 0.55),
-    0 2px 5px rgba(30, 42, 69, 0.25);
+    0 0 0 1px var(--rest-deep),
+    0 2px 5px rgba(16, 32, 42, 0.25);
   cursor: pointer;
 }
 
@@ -462,7 +467,7 @@ input[type='range']::-webkit-slider-thumb {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: rgba(30, 42, 69, 0.18);
+  background: var(--switch-off);
   transition: background 0.18s ease;
 }
 
@@ -474,13 +479,13 @@ input[type='range']::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(16, 32, 42, 0.26);
   transition: transform 0.18s ease;
 }
 
 .switch input:checked + i {
-  background: var(--accent);
+  background: var(--rest-strong);
 }
 
 .switch input:checked + i::after {
@@ -514,8 +519,8 @@ input[type='color']::-webkit-color-swatch {
   height: 30px;
   padding: 0 12px;
   border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--accent-deep);
+  background: var(--rest-soft);
+  color: var(--rest-deep);
   font-family: var(--font-num);
   font-size: 12.5px;
   font-weight: 600;
@@ -524,7 +529,7 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .hotkey:hover {
-  background: rgba(79, 195, 247, 0.26);
+  background: var(--rest-soft-strong);
 }
 
 .hotkey.is-recording {
@@ -542,11 +547,11 @@ input[type='color']::-webkit-color-swatch {
   max-width: 84%;
   padding: 9px 16px;
   border-radius: 10px;
-  background: rgba(30, 42, 69, 0.9);
-  color: #ffffff;
+  background: var(--ink-overlay);
+  color: var(--on-color);
   font-size: 12.5px;
   line-height: 1.4;
-  box-shadow: 0 10px 26px rgba(30, 42, 69, 0.3);
+  box-shadow: 0 10px 28px rgba(16, 32, 42, 0.34);
   animation: toast-in 0.18s ease;
   z-index: 50;
 }
@@ -556,7 +561,7 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .toast.is-warn {
-  background: rgba(214, 63, 43, 0.94);
+  background: var(--focus);
 }
 
 @keyframes toast-in {

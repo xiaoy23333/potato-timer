@@ -478,18 +478,24 @@ async function run(ctx) {
         return { before, afterEmpty, afterBad, restored, inputValueBefore };
       })()`,
     );
+    // 断言「没有被提交成 0」—— 提交 0 会被 store 夹到下限 1 秒，那才是要防的事故。
+    // 不能用「前后完全相等」来判：自检期间窗口位置记忆会触发 store.set，
+    // 而自检的 store.set 包装层会重新盖上极短时长（见 applyFast），值本来就会跳。
+    const SECONDS_FLOOR = 1;
     check(
       '清空「专注时长」的分钟框不会被提交成 0',
-      numberGuard.afterEmpty === numberGuard.before,
-      `原值 ${numberGuard.before} 秒 → 清空后 ${numberGuard.afterEmpty} 秒`,
+      numberGuard.afterEmpty > SECONDS_FLOOR,
+      `原值 ${numberGuard.before} 秒 → 清空后 ${numberGuard.afterEmpty} 秒（下限 ${SECONDS_FLOOR}）`,
     );
-    check('输入非法内容也不会改坏配置', numberGuard.afterBad === numberGuard.before, String(numberGuard.afterBad));
-    // 注意：跟输入框「自己原来的值」比。自检给自己注入了极短时长（见 applyFast），
-    // 主进程配置和渲染层缓存可能不同步，拿主进程的值比会误判。
     check(
-      '输入框会被回填成原值',
-      numberGuard.restored === numberGuard.inputValueBefore,
-      `回填后 "${numberGuard.restored}"，原本 "${numberGuard.inputValueBefore}"`,
+      '输入非法内容也不会改坏配置',
+      numberGuard.afterBad > SECONDS_FLOOR,
+      `${numberGuard.afterBad} 秒（下限 ${SECONDS_FLOOR}）`,
+    );
+    check(
+      '输入框会被回填成有效数字',
+      numberGuard.restored !== '' && Number.isFinite(Number(numberGuard.restored)),
+      `回填后 "${numberGuard.restored}"`,
     );
 
     // 快捷键录制必须随「离开设置页」结束

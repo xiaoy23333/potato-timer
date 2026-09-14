@@ -1,33 +1,77 @@
-/* 明亮清新的公共主题令牌，主窗口 / 弹窗 / 小浮窗共用 */
+/* ============================================================================
+ * 晨光番茄园 —— 公共主题令牌
+ *
+ * 主窗口 / 提醒弹窗 / 小浮窗 / 光效 共用。
+ *
+ * 配色策略（2026-09-13 定稿）
+ *   情绪温度：清晨的厨房。清亮、有精神、带一点食物的暖意，不是"软件蓝"。
+ *   主导关系：极淡的青白底 + 一个真正的高饱和主角（番茄红）；青蓝退到它该在的位置。
+ *   对比区间：正文 ≥15:1，次要 ≥6:1，弱文字 ≥4.5:1；颜色对比集中在大色块上。
+ *   颜色剂量：克制。番茄红只出现在三处 —— 进度环、主操作、专注徽章。
+ *             青蓝只出现在三处 —— 休息徽章、延后按钮、四周光效。
+ *
+ * 三条硬规则
+ *   1. 中性色一律从品牌青蓝推导（带一丝青），不掺纯灰。
+ *   2. 彩色面上的次要文字，从那个色相或前景推导，绝不退回灰。
+ *   3. 投影色用墨色推导，不用纯黑。
+ *
+ * 四周光效的颜色不在这里 —— 它由设置里的 glow.color 驱动（默认 #4fc3f7），
+ * --rest 取的是同一个值，保证界面与光效同源。
+ * ========================================================================== */
 
 :root {
-  --bg: #f4f8ff;
-  --bg-deep: #e9f1fd;
+  /* —— 画布 —— */
+  --bg: #f3f8f9;
+  --bg-deep: #e7eff1;
   --card: #ffffff;
 
-  --ink: #1e2a45;
-  --ink-soft: #606f8c;
-  --ink-faint: #9aa7be;
+  /* —— 墨：三级，全部带同一丝青 —— */
+  --ink: #10202a; /* 15.5:1 on --bg */
+  --ink-soft: #3f5b68; /*  6.7:1 */
+  --ink-faint: #55707d; /*  5.1:1 —— 小字的最低一档，不能再淡 */
 
-  --accent: #4fc3f7;
-  --accent-deep: #2196c9;
-  --accent-soft: rgba(79, 195, 247, 0.14);
+  /* —— 主角 · 专注（真正的番茄红，不是珊瑚粉）—— */
+  --focus: #d42c22; /* 实底；白字压在上面 5.0:1 */
+  --focus-deep: #a8251c; /* 浅底上的文字色 */
+  --focus-soft: rgba(212, 44, 34, 0.12);
 
-  /* 专注用番茄红，休息用淡蓝 */
-  --focus: #f4664f;
-  --focus-soft: rgba(244, 102, 79, 0.13);
-  --break: #4fc3f7;
-  --break-soft: rgba(79, 195, 247, 0.14);
+  /* —— 配角 · 休息（与四周光效同源的青蓝）—— */
+  --rest: #4fc3f7; /* 与默认光效色完全相同：实底、描边 */
+  --rest-deep: #0a6f96; /* 浅底上的文字色 */
+  --rest-strong: #1a93c4; /* 需要 3:1 的控件实底（开关打开态） */
+  --rest-soft: rgba(79, 195, 247, 0.16);
 
-  --line: rgba(30, 42, 69, 0.09);
-  --line-strong: rgba(30, 42, 69, 0.16);
+  /* 开关关闭态的轨道。比常见的深，是因为控件边界要过 3:1 ——
+     ON/OFF 另有滑块位置作为非颜色线索，但边界本身不该靠猜。 */
+  --switch-off: #88939a;
 
-  --shadow-card: 0 18px 44px rgba(30, 42, 69, 0.14), 0 2px 8px rgba(30, 42, 69, 0.06);
-  --shadow-soft: 0 6px 18px rgba(30, 42, 69, 0.1);
+  /* —— 番茄叶（只用在标题栏那个小标记上）—— */
+  --leaf: #3f8f4a;
 
+  /* —— 交互态：全部从墨色推导，不用纯灰也不用纯黑 —— */
+  --ghost: rgba(16, 32, 42, 0.055);
+  --hover: rgba(16, 32, 42, 0.075);
+  --ink-overlay: rgba(16, 32, 42, 0.92);
+  --rest-soft-strong: rgba(79, 195, 247, 0.3);
+  /* —— 分隔线 / 投影：都从墨色推导 —— */
+  --line: rgba(16, 32, 42, 0.09);
+  --line-strong: rgba(16, 32, 42, 0.16);
+  --shadow-card: 0 18px 44px rgba(16, 32, 42, 0.16), 0 2px 8px rgba(16, 32, 42, 0.06);
+  --shadow-soft: 0 6px 18px rgba(16, 32, 42, 0.11);
+  /* 提醒弹窗是浮在"任意一张壁纸"上的，投影要比卡片更实，才能把边缘交代清楚 */
+  --shadow-float: 0 20px 48px rgba(16, 32, 42, 0.28), 0 3px 10px rgba(16, 32, 42, 0.14);
+  --shadow-focus: 0 8px 20px rgba(168, 37, 28, 0.3);
+  --shadow-focus-hover: 0 11px 26px rgba(168, 37, 28, 0.38);
+  --shadow-focus-active: 0 4px 12px rgba(168, 37, 28, 0.3);
+
+  /* 彩色底上的文字只有一种颜色：白。定义成令牌免得各处再写 #fff */
+  --on-color: #ffffff;
+
+  /* —— 形状 —— */
   --radius: 16px;
   --radius-sm: 10px;
 
+  /* —— 字体 —— */
   --font: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', system-ui, -apple-system,
     sans-serif;
   --font-num: 'Segoe UI Variable Display', 'Segoe UI', 'DIN Alternate', 'Microsoft YaHei UI', system-ui,
@@ -50,4 +94,60 @@ button {
 
 input {
   font-family: inherit;
+}
+
+/* ============================================================================
+ * 浏览器自带的那些表面 —— 它们也属于这套配色
+ *
+ * craft floor 把这叫做「最能看出一个界面是被造出来的、还是被拼起来的」的地方：
+ * 选中色、光标、焦点环、滚动条，默认都来自浏览器自己，不属于任何设计系统。
+ * ========================================================================== */
+
+/* 选中文字：用主角色的淡底，不用系统蓝 */
+::selection {
+  background: var(--focus-soft);
+  color: var(--ink);
+}
+
+/* 键盘焦点环：用配角色，和"选中/按下"分开语义 */
+:focus-visible {
+  outline: 2px solid var(--rest-deep);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 输入光标：主角色的细竖线 */
+input,
+textarea {
+  caret-color: var(--focus);
+}
+
+/* 滚动条：从墨色推导，不用系统灰 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 32, 42, 0.16);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 32, 42, 0.26);
+}
+
+/* 数字输入框的上下箭头：默认样式和这套配色打架，直接去掉 */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
 }

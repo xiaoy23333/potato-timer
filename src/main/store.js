@@ -27,7 +27,7 @@ const DEFAULTS = Object.freeze({
   glow: { color: '#4fc3f7', intensity: 0.8, flashSeconds: 1.6 },
   // —— 小浮窗 ——
   // color：倒计时文字颜色，一个颜色管全部状态（专注/休息/空闲都一样）
-  floatWindow: { enabled: true, draggable: false, color: '#f4664f' },
+  floatWindow: { enabled: true, draggable: false, color: '#d42c22' },
   // —— 开机自启 ——
   autoLaunch: true,
   // —— 主窗口位置记忆（非用户可见设置）——
