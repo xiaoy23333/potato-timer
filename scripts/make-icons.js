@@ -1,9 +1,12 @@
 'use strict';
 
 /**
- * 一次性脚本：生成 assets/icon.png（256）与 assets/tray.png（32）。
- * 纯 Node 手写 PNG，不引入任何图形库；用 4x 超采样做抗锯齿。
+ * 一次性脚本：生成
+ *   assets/icon.png   256  主窗口图标
+ *   assets/tray.png    32  托盘图标
+ *   build/icon.png    512  打包用（electron-builder 会由它生成多尺寸 .ico）
  *
+ * 纯 Node 手写 PNG，不引入任何图形库；用 4x 超采样做抗锯齿。
  * 运行：node scripts/make-icons.js
  */
 
@@ -172,5 +175,13 @@ fs.writeFileSync(path.join(assetsDir, 'icon.png'), icon);
 const tray = renderIcon(32, 6);
 fs.writeFileSync(path.join(assetsDir, 'tray.png'), tray);
 
-console.log(`icon.png  ${icon.length} bytes`);
-console.log(`tray.png  ${tray.length} bytes`);
+// 打包用的母版：electron-builder 会由这一张生成 16/24/32/48/64/128/256 的 .ico。
+// 512 而不是 256，是为了 256 那一档也有余量，缩下来边缘更干净。
+const buildDir = path.join(__dirname, '..', 'build');
+fs.mkdirSync(buildDir, { recursive: true });
+const pack = renderIcon(512, 4);
+fs.writeFileSync(path.join(buildDir, 'icon.png'), pack);
+
+console.log(`assets/icon.png    ${icon.length} bytes  (256x256)`);
+console.log(`assets/tray.png    ${tray.length} bytes  (32x32)`);
+console.log(`build/icon.png     ${pack.length} bytes  (512x512)`);

@@ -2,12 +2,26 @@
 
 /**
  * 配置持久化。
- * 存放在 Electron 用户数据目录：%APPDATA%\pomodoro-timer\config.json
+ * 存放在 %APPDATA%\pomodoro-timer\config.json
+ *
+ * ⚠ 这个目录名是**写死的**，不走 app.getPath('userData')。
+ *
+ * 原因：userData 的路径由 `app.getName()` 决定，而 `app.getName()` 在
+ * package.json 里设了 `productName` 之后返回的是 productName。打包时把产品名
+ * 定成「番茄钟」，userData 就会从 %APPDATA%\pomodoro-timer 悄悄变成
+ * %APPDATA%\番茄钟 —— **用户存在旧目录里的全部设置会被无声无息地忽略掉，
+ * 一切回到默认值**（光效颜色、浮窗颜色、时长、快捷键全部丢失）。
+ *
+ * 所以这里锚死在 `appData` 下那个固定的 `pomodoro-timer` 目录：
+ * 产品叫什么名字（安装包、快捷方式、exe 名）和「设置存在哪」彻底解耦。
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
 const { app } = require('electron');
+
+/** 设置目录名。改它等于让所有老用户的设置失效，别改。 */
+const APP_DIR_NAME = 'pomodoro-timer';
 
 const DEFAULTS = Object.freeze({
   // —— 计时循环（**秒**，设置面板里用「分 + 秒」两个输入框）——
@@ -111,7 +125,7 @@ function normalize(raw) {
 
 class Store {
   constructor() {
-    this.filePath = path.join(app.getPath('userData'), 'config.json');
+    this.filePath = path.join(app.getPath('appData'), APP_DIR_NAME, 'config.json');
     this.config = normalize(this._read());
   }
 

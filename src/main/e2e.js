@@ -18,7 +18,24 @@ const { app, desktopCapturer, screen } = require('electron');
 
 const { STATUS } = require('./timer');
 
-const OUT_DIR = path.join(__dirname, '..', '..', 'screenshots');
+// 截图输出目录。
+//
+// 开发时落在项目的 screenshots/（已被 .gitignore 忽略）。
+// **打包之后 __dirname 在 app.asar 里，是只读的** —— 直接往那儿写会让
+// mkdirSync 抛异常、把整段自检带崩。所以打包后改落到系统的临时目录，
+// 这样"装完之后还能对着安装版自己跑一遍自检"这件事才成立。
+const OUT_DIR = app.isPackaged
+  ? path.join(app.getPath('temp'), 'pomodoro-e2e')
+  : path.join(__dirname, '..', '..', 'screenshots');
+
+/** 存图。存不下就只警告，不能因为一张截图把整段自检带崩。 */
+function saveShot(fileName, png) {
+  try {
+    fs.writeFileSync(path.join(OUT_DIR, fileName), png);
+  } catch (err) {
+    console.warn(`[e2e] 截图 ${fileName} 写入失败（不影响断言）：${err.message}`);
+  }
+}
 const results = [];
 const rendererErrors = [];
 
@@ -74,7 +91,7 @@ function watch(win, tag) {
 async function shoot(win, fileName) {
   if (!win || win.isDestroyed()) return null;
   const image = await win.webContents.capturePage();
-  fs.writeFileSync(path.join(OUT_DIR, fileName), image.toPNG());
+  saveShot(fileName, image.toPNG());
   return image;
 }
 
@@ -317,7 +334,7 @@ async function captureDesktop(fileName) {
       },
     });
     if (!sources.length) return null;
-    fs.writeFileSync(path.join(OUT_DIR, fileName), sources[0].thumbnail.toPNG());
+    saveShot(fileName, sources[0].thumbnail.toPNG());
     return sources[0].thumbnail;
   } catch (err) {
     console.error('[e2e] 抓取桌面截图失败：', err.message);
@@ -436,7 +453,12 @@ async function run(ctx) {
   guard.unref?.();
 
   try {
-    fs.mkdirSync(OUT_DIR, { recursive: true });
+    try {
+      fs.mkdirSync(OUT_DIR, { recursive: true });
+    } catch (err) {
+      // 建不出目录也不能让整段自检归零：截图只是副产品，断言才是正事
+      console.warn(`[e2e] 截图目录建不出来（不影响断言）：${err.message}`);
+    }
 
     // ————— 1. 等窗口就绪 —————
     await waitFor(() => !!wm.main && !!wm.popup && !!wm.float && !!wm.glow, 8000);
@@ -465,6 +487,22 @@ async function run(ctx) {
       '光效层铺满整块屏幕',
       glowBounds.width === display.bounds.width && glowBounds.height === display.bounds.height,
       `${glowBounds.width}x${glowBounds.height}`,
+    );
+
+    // 配置文件必须锚在 %APPDATA%\pomodoro-timer\config.json，**不能**跟着 productName 走。
+    // 回归背景：store 原本用 app.getPath('userData')，而那个路径由 app.getName() 决定；
+    // 打包时一旦把 productName 设成「番茄钟」，设置目录就会变成 %APPDATA%\番茄钟，
+    // 老用户存在旧目录里的全部设置被无声忽略、一切回到默认值。
+    const cfgPath = String(store.filePath || '').replace(/\\/g, '/');
+    check(
+      '设置目录锚定在 pomodoro-timer，不跟随产品名',
+      cfgPath.endsWith('/pomodoro-timer/config.json'),
+      store.filePath,
+    );
+    check(
+      '设置目录就在 %APPDATA% 下（不是别的地方）',
+      cfgPath.startsWith(String(app.getPath('appData')).replace(/\\/g, '/')),
+      store.filePath,
     );
 
     const popupBounds = wm.popup.getBounds();

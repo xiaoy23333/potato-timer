@@ -1,16 +1,61 @@
 {
   "name": "pomodoro-timer",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "番茄钟 — 到点屏幕顶部弹窗 + 四周向内光效的 Electron 桌面番茄钟",
   "main": "src/main/main.js",
   "private": true,
+  "author": "xiao__y <xiaoy23333@users.noreply.github.com>",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dev": "electron ."
+    "dev": "electron .",
+    "pack:dir": "electron-builder --dir",
+    "dist": "electron-builder",
+    "icons": "node scripts/make-icons.js",
+    "test": "node scripts/test-timer.js"
   },
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
-    "electron": "^44.3.0"
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.pomodoro.timer",
+    "productName": "番茄钟",
+    "copyright": "Copyright © 2026 xiao__y",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "番茄钟",
+      "artifactName": "番茄钟-${version}-安装包.${ext}"
+    },
+    "portable": {
+      "artifactName": "番茄钟-${version}-免安装.${ext}"
+    }
   }
 }

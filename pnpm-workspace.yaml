@@ -1,0 +1,7 @@
+# pnpm 12 把「允许哪些依赖跑安装脚本」放在这里（不再是 package.json 的 pnpm 字段）。
+#
+# electron-winstaller 只为 Squirrel.Windows 打包目标服务，而我们用的是 NSIS +
+# portable，根本走不到它，所以**拒绝**它跑安装脚本 —— 用不到的东西就不要让它
+# 在安装期执行代码。
+allowBuilds:
+  electron-winstaller: false

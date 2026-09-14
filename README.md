@@ -7,6 +7,34 @@
 
 ---
 
+## 怎么装（给拿到安装包的自己 / 朋友）
+
+在 `dist/` 里有两个文件，挑一个：
+
+| 文件 | 适合 |
+| --- | --- |
+| **`番茄钟-1.0.0-安装包.exe`** | 想正常装到系统里：**不需要管理员权限**，装到当前用户目录，会建开始菜单和桌面快捷方式，之后可以在「设置 → 应用」里正常卸载 |
+| **`番茄钟-1.0.0-免安装.exe`** | 不想装、只想双击就跑：单文件绿色版，不写注册表、不建快捷方式 |
+
+### ⚠ 第一次运行会被 Windows 拦一下
+
+这两个文件**没有代码签名**（签名证书要花钱买）。所以第一次运行会看到蓝色的
+「Windows 已保护你的电脑」：
+
+> 点 **「更多信息」→「仍要运行」** 即可。
+
+这不是病毒提示，只是因为发布者未知。介意的话可以自己去微软买证书重新签；
+把这个包发给朋友时也记得提前说一句，否则他们多半会以为中招了。
+
+### 装完之后
+
+- **开机自启默认是开的**。第一次运行会把它指向**安装后的那个 exe**。
+  不想要就在「设置 → 其它 → 开机自启」里关掉。
+- 设置固定存在 `%APPDATA%\pomodoro-timer\config.json`，
+  **和安装目录、和产品名都无关** —— 重装、换版本、装到别的地方，设置都跟着你走。
+
+---
+
 ## 文档在哪
 
 | 文件 | 内容 |
@@ -14,10 +42,11 @@
 | `计划.md` | **唯一事实来源**：锁定的需求、状态机、技术方案、进度、bug 根因、工作流程与验证规范 |
 | `未解决问题.md` | 反复修不好的问题 / 我无法自动验证、需要你人工确认的事项 / 已解决记录 |
 | `README.md` | 就是你正在看的这份，只讲怎么用 |
+| `PRODUCT.md` | 产品事实：给谁用、为什么存在、约束与品牌承诺 |
 
 ---
 
-## 快速开始
+## 从源码跑（开发）
 
 ```powershell
 cd E:\dsh\test1
@@ -29,9 +58,37 @@ pnpm start        # 启动番茄钟
 
 ---
 
+## 自己重新打包
+
+```powershell
+# ⚠ 这台机器直连 GitHub 是不通的（TLS 直接断），而 electron-builder 要往 GitHub 下
+#   Electron / NSIS / winCodeSign，所以**必须**走 npmmirror 镜像，否则会卡在下载那一步。
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-builder-binaries/"
+$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+
+pnpm run pack:dir   # 只解包到 dist/win-unpacked/，用来快速验证，快
+pnpm dist           # 出安装包 + 免安装版，产物在 dist/
+pnpm icons          # 重新生成图标（改了图标才需要）
+```
+
+> 脚本叫 `pack:dir` 而不是 `pack` —— **`pnpm pack` 是 pnpm 自己的内置命令**（打 npm tarball），
+> 会把同名脚本盖掉。我第一次就这么踩了一脚。
+
+### 打包相关的事实
+
+- **没有代码签名**：产物是 NotSigned，所以会有上面说的 SmartScreen 拦截。
+- **`productName` 是「番茄钟」，但安装目录是 `pomodoro-timer`**（electron-builder 用 `name` 建目录）。
+  于是 exe 和快捷方式显示中文、安装路径保持 ASCII，两边都合适。
+- **设置目录写死在 `%APPDATA%\pomodoro-timer`，不走 `app.getPath('userData')`。**
+  因为 userData 跟着 `app.getName()` 走，而设了 `productName` 之后它返回的是产品名 ——
+  一旦不锚死，打包版的设置目录会变成 `%APPDATA%\番茄钟`，**老用户的全部设置被无声忽略**。
+  自检里有两条断言专门守着这件事。
+
+---
+
 ## 到点之后会发生什么
 
-1. 屏幕**四周亮起**向内的淡蓝色光效，呼吸脉动；这层光**鼠标点击完全穿透**，不会挡你操作任何软件。
+1. 屏幕**四周亮起**向内的淡蓝色光效，**只闪一次、闪完自己淡出消失**；这层光**鼠标点击完全穿透**，不会挡你操作任何软件。
 2. 屏幕**顶部居中**弹出一张卡片，**置顶显示、不抢键盘焦点、不会自动消失**，它盖得住全屏应用。
 3. 同时响一声合成的柔和钟声。
 4. 你有两个出口：
@@ -81,9 +138,16 @@ pnpm start        # 启动番茄钟
 | 命令 | 作用 |
 | --- | --- |
 | `pnpm start` | 启动应用 |
-| `node scripts/test-timer.js` | 计时状态机单元测试（纯 Node，29 项） |
-| `$env:POMODORO_E2E='1'; pnpm start` | 端到端自检 62 项：真跑提醒链路、用真实输入管线操作滑块与按钮、断言四个窗口的 DOM、抓桌面截图做像素差分，截图存到 `screenshots/` |
-| `node scripts/make-icons.js` | 重新生成 `assets/icon.png` 与 `assets/tray.png`（纯代码绘制的番茄） |
+| `pnpm test` | 计时状态机单元测试（纯 Node，**32 项**） |
+| `$env:POMODORO_E2E='1'; pnpm start` | 端到端自检 **86 项**：真跑提醒链路、用**操作系统真鼠标**操作滑块与按钮、断言四个窗口的 DOM、抓桌面截图做像素差分，截图存到 `screenshots/` |
+| `npx electron scripts/verify-glow-flash.js` | 量光效闪光全程的"可见宽度"，验证不会出现"先小一圈再放大" |
+| `npx electron scripts/shot-main.js` | 主窗口 11 张状态图 + 4 种窗口尺寸的几何体检 |
+| `node scripts/audit-colors.js` | 配色对比度审计（**30 项**，直接从 `theme.css` 解析令牌） |
+| `node scripts/make-icons.js` | 重新生成三个图标（纯代码绘制的番茄，不依赖图形库） |
+
+> **打包版同样能跑自检**：`$env:POMODORO_E2E='1'` 然后直接运行装好的
+> `番茄钟.exe`。打包后截图会落到系统临时目录（asar 是只读的，写不进项目目录）。
+> 这是验证"装出来的那个东西到底能不能用"最直接的办法。
 
 按 `计划.md` 第 7 节的约定：**每做一部分就验证，只要有一条 FAIL 就不算做完**；关键改动还会派独立子代理做对抗性审查。
 
@@ -92,6 +156,9 @@ pnpm start        # 启动番茄钟
 ## 目录结构
 
 ```
+assets/              图标（icon.png 256 / tray.png 32，都由 make-icons.js 生成）
+build/icon.png       打包用母版 512，electron-builder 由它生成多尺寸 .ico
+dist/                打包产物（已 gitignore，随时能重新生成）
 src/
 ├─ main/
 │  ├─ main.js        主进程入口，把各模块串起来
