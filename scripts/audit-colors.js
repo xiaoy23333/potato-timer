@@ -134,7 +134,13 @@ check('开关打开态 rest-strong / 画布', rgb('rest-strong'), BG, 3.0, '控�
 // （环里的大号数字也说了同一件事，但两条路都该走得通）
 check('进度弧 focus / 画布', rgb('focus'), BG, 3.0, '专注中，3:1');
 check('进度弧 rest-strong / 画布', rgb('rest-strong'), BG, 3.0, '休息 / 延后，3:1');
-check('进度弧 ink-faint / 画布', rgb('ink-faint'), BG, 3.0, '已暂停，3:1');
+check(
+  '进度弧 idle-ring / 画布',
+  rgb('idle-ring'),
+  BG,
+  3.0,
+  '已暂停，纯灰 —— 对「中性色从品牌青蓝推导」的点名例外',
+);
 
 // —— 主按钮的描边态（计时跑起来之后的那副面孔）——
 check('主按钮描边态文字 focus-deep / 画布', rgb('focus-deep'), BG, 4.5, '15px 粗体');

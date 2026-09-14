@@ -223,13 +223,13 @@ function renderState(s) {
   el.dots.classList.toggle('is-muted', snoozing);
 
   // 进度环的颜色由「这一段处于什么状态」决定，不是由阶段决定：
-  //   专注中 → 主角红 ｜ 暂停 → 中性墨 ｜ 休息 / 延后 → 配角蓝
+  //   专注中 → 主角红 ｜ 暂停 → 纯灰 ｜ 休息 / 延后 → 配角蓝
   // 休息用的是 --rest-strong 而不是 --rest：--rest（#4fc3f7）是光效色，铺在
   // 浅底上只有 1.8:1，做光晕没问题，做十几像素宽的实心弧会糊进背景里。
   const arcColor = !isFocus || snoozing
     ? 'var(--rest-strong)'
     : s.status === 'paused'
-      ? 'var(--ink-faint)'
+      ? 'var(--idle-ring)'
       : 'var(--focus)';
   el.ringProgress.style.stroke = arcColor;
   // 轨道是"同一只环还没走到的那一段"，所以取同一个色相的浅调，

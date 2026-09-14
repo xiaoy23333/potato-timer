@@ -21,6 +21,14 @@ const FLOAT_SIZE = { width: 132, height: 46 };
 const POPUP_TOP = 18;
 const FLOAT_TOP = 8;
 
+// 主窗口尺寸。需求方反馈「倒计时占得太满、四周想多留白」，所以窗口放大了一号，
+// 同时把表盘的占比压下去（见 index.css 的 .dial）—— 变大的是留白，不是数字。
+const MAIN_SIZE = { width: 420, height: 640 };
+const MAIN_MIN_SIZE = { minWidth: 380, minHeight: 560 };
+// 旧版的默认尺寸。用户在旧版里**从没拖过窗口**的话，配置里存的就是这一份；
+// 不把它识别出来，换了默认尺寸老用户也永远看不到（saved 会把它盖回去）。
+const LEGACY_MAIN_SIZE = { width: 384, height: 548 };
+
 const WEB_PREFS = {
   preload: PRELOAD,
   contextIsolation: true,
@@ -50,10 +58,8 @@ class WindowManager {
   createMain({ hidden = false } = {}) {
     const saved = this.store.get().mainWindowBounds;
     const options = {
-      width: 384,
-      height: 548,
-      minWidth: 360,
-      minHeight: 500,
+      ...MAIN_SIZE,
+      ...MAIN_MIN_SIZE,
       frame: false,
       show: false,
       resizable: true,
@@ -63,7 +69,12 @@ class WindowManager {
       icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
       webPreferences: WEB_PREFS,
     };
-    if (saved) Object.assign(options, saved);
+    if (saved) {
+      // 记住的尺寸正好等于旧版默认值 ⇒ 用户从没调过窗口，只沿用位置，尺寸用新的
+      const untouched =
+        saved.width === LEGACY_MAIN_SIZE.width && saved.height === LEGACY_MAIN_SIZE.height;
+      Object.assign(options, untouched ? { x: saved.x, y: saved.y } : saved);
+    }
 
     this.main = new BrowserWindow(options);
     load(this.main, 'index.html');

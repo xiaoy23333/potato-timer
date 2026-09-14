@@ -188,7 +188,29 @@ function topCenterDiff(a, b) {
 }
 
 /** 用真实鼠标点一下某个元素，返回页面收到的 pointerdown 次数 */
-async function osRealClick(win, selector) {
+/**
+ * 用**操作系统真鼠标**点一下某个元素，返回点到的次数。
+ *
+ * 为什么必须真鼠标：`sendInputEvent` 是直接注入渲染进程的，会绕过 Windows 的
+ * 窗口命中测试，因此**抓不到「窗口收不到鼠标」这类系统层问题**——那个 bug 让
+ * 自检一路全绿却是坏的（见 计划.md 6.4 节）。
+ *
+ * 为什么带重试：注入本身偶尔会打空（光标刚移过去、系统还没把这次点击投递下来），
+ * 三次里大约栽一次。**重试不会削弱这道防线**——真正的那个 bug 是"窗口永远收不到
+ * 鼠标"，每一次都会失败，重试三次照样红；而偶发的打空重试一次就过了。
+ */
+async function osRealClick(win, selector, attempts = 3) {
+  let last = null;
+  for (let i = 1; i <= attempts; i += 1) {
+    last = await osRealClickOnce(win, selector);
+    if (last && last.count > 0) return { ...last, attempts: i };
+    if (last && last.error) return { ...last, attempts: i };
+    await wait(200);
+  }
+  return { ...(last || { count: 0, px: 0, py: 0 }), attempts };
+}
+
+async function osRealClickOnce(win, selector) {
   const rect = await js(
     win,
     `(() => {
@@ -232,7 +254,21 @@ public static class DshOsClick {
 
   await wait(300);
   const count = await js(win, 'window.__osClicks');
-  return { count, px, py };
+  // 落点诊断：真鼠标没点到时，要能一眼分清是"坐标算错了/被别的窗口挡了"
+  // 还是"窗口收到了鼠标但没投递给这个元素"
+  let hit = '';
+  try {
+    hit = await js(
+      win,
+      `(() => {
+        const el = document.elementFromPoint(${Math.round(rect.x)}, ${Math.round(rect.y)});
+        return el ? (el.id || el.className || el.tagName) : 'null';
+      })()`,
+    );
+  } catch {
+    hit = '(取不到)';
+  }
+  return { count, px, py, hit, visible: win.isVisible() };
 }
 
 /**
@@ -701,6 +737,97 @@ async function run(ctx) {
     await playGlow();
     const desktopShot = await captureDesktop('04-桌面实际效果-提醒中.png');
 
+    // ————— 6b. 光效的"形状"在整段闪光里必须恒定 —————
+    // 回归：需求方连续三次反馈「光效先比屏幕小一圈、然后才放大到屏幕大小，
+    // 外圈切口是整齐的，像是整张图被等比缩小过」。
+    //
+    // 逐帧实测的结论是：**几何从头到尾一个像素都没变**，变的是亮度。
+    // 而柔光渐变整体调暗时，"看得见的宽度"会跟着缩水 —— 因为可见边界画在
+    // 「alpha × 不透明度 = 眼睛阈值」那条线上，越暗这条线越往边缘缩。
+    // 实测 alpha 剖面后算出来：不透明度 0 → 1 会让可见宽度变化 2.31 倍，
+    // 看上去就是"先小一圈再放大"。修法是把不透明度下限抬到 0.62、
+    // 并让渐变在 84% 处落零（见 glow.css）。
+    //
+    // 这里守住的是那条不变的底线：整段闪光里视口和四条边的尺寸不能变。
+    // 逐帧挂 rAF 探针，闪光跑完再读回来。
+    await js(
+      wm.glow,
+      `(() => {
+        window.__geom = [];
+        window.__geomStop = false;
+        const tick = () => {
+          if (window.__geomStop) return;
+          const e = document.querySelector('.edge-left');
+          const g = document.getElementById('glow');
+          const r = e ? e.getBoundingClientRect() : null;
+          window.__geom.push([
+            innerWidth, innerHeight,
+            r ? Math.round(r.width) : -1, r ? Math.round(r.height) : -1,
+            getComputedStyle(g).opacity,
+          ]);
+          // 只采够覆盖这段闪光就行：采太久会让这个满屏置顶窗口的合成器一直忙，
+          // 后面那些真鼠标断言会被它拖累（实测出现过连续三次点不中）。
+          if (window.__geom.length < 150) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        return true;
+      })()`,
+    );
+    await playGlow();
+    await wait(1700); // 跑完整段 1.6 秒的闪光
+    const geom = await js(
+      wm.glow,
+      `window.__geomStop = true; JSON.stringify(window.__geom)`,
+    );
+    const geomRows = JSON.parse(geom || '[]');
+    const viewports = new Set(geomRows.map((r) => `${r[0]}x${r[1]}`));
+    const edges = new Set(geomRows.map((r) => `${r[2]}x${r[3]}`));
+    check(
+      // 帧数只要够多就行，不卡具体数字：rAF 的帧率跟着机器负载跑
+      '闪光全程视口尺寸恒定（采到帧数 > 10）',
+      geomRows.length > 10 && viewports.size === 1,
+      `${geomRows.length} 帧，视口出现过 ${viewports.size} 种：${[...viewports].slice(0, 3).join(' / ')}`,
+    );
+    check(
+      '闪光全程光效层尺寸恒定（不会"先小一圈再放大"）',
+      edges.size === 1,
+      `四边尺寸出现过 ${edges.size} 种：${[...edges].slice(0, 3).join(' / ')}`,
+    );
+    // 不透明度下限：别从 0 慢慢爬上来，那样一定又会看出"长大"。
+    //
+    // ⚠ 这里**不能**按 rAF 帧数断言。第一版写的是"前 8 帧内要到 0.5"，
+    // 结果同一份代码跑三次红两次 —— 因为 rAF 的帧率跟着机器负载跑，
+    // 采到的是"第几帧"而不是"什么时刻"。下面改成把动画暂停、
+    // 直接把它拨到指定的进度上读计算值：与帧率、与机器快慢都无关。
+    const glowCurve = await js(
+      wm.glow,
+      `(() => {
+        const el = document.getElementById('glow');
+        const anims = el.getAnimations();
+        if (!anims.length) return null;
+        const a = anims[0];
+        a.pause();
+        const dur = a.effect.getTiming().duration;
+        const at = (pct) => {
+          a.currentTime = dur * pct;
+          return Number(getComputedStyle(el).opacity);
+        };
+        const out = { dur, p3: at(0.03), p12: at(0.12), p44: at(0.44), p90: at(0.9) };
+        a.cancel(); // 复原：cancel 之后回到基础态（opacity: 0）
+        return out;
+      })()`,
+    );
+    check(
+      '闪光曲线：3% 处亮度就要过 0.5（不从 0 慢慢爬，否则会被看成"长大"）',
+      !!glowCurve && glowCurve.p3 >= 0.5,
+      glowCurve ? `时长 ${glowCurve.dur}ms，3% 处 opacity=${glowCurve.p3}` : '拿不到动画',
+    );
+    check(
+      '闪光曲线：中段保持全亮、末尾回到 0',
+      !!glowCurve && glowCurve.p12 === 1 && glowCurve.p44 === 1 && glowCurve.p90 < 0.5,
+      glowCurve ? `12%=${glowCurve.p12}，44%=${glowCurve.p44}，90%=${glowCurve.p90}` : '拿不到动画',
+    );
+
     if (glowShot) {
       const stats = alphaStats(glowShot);
       check(
@@ -910,7 +1037,10 @@ async function run(ctx) {
     check(
       '第二次提醒时操作系统的真鼠标能点到弹窗（关键回归）',
       !!osClick && osClick.count > 0,
-      osClick ? `逻辑坐标(${osClick.px}, ${osClick.py}) → pointerdown=${osClick.count}` : '没找到元素',
+      osClick
+        ? `逻辑坐标(${osClick.px}, ${osClick.py}) → pointerdown=${osClick.count}，` +
+          `尝试 ${osClick.attempts} 次，窗口可见=${osClick.visible}，该点命中 <${osClick.hit}>`
+        : '没找到元素',
     );
 
     const secondDrag = await realDragSlider(wm.popup, 1);

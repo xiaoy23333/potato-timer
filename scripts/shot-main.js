@@ -131,30 +131,30 @@ app.whenReady().then(async () => {
       `document.getElementById('pageSettings').hidden = true; true`,
   );
 
-  // —— 9. 最小尺寸 360x500，看小窗口下会不会挤爆 ——
+  // —— 9. 最小尺寸，看小窗口下会不会挤爆 ——
   const b = wm.main.getBounds();
-  wm.main.setBounds({ x: b.x, y: b.y, width: 360, height: 500 });
+  wm.main.setBounds({ x: b.x, y: b.y, width: 380, height: 560 });
   timer.reset();
   await wait(400);
   await shoot('主界面-09-最小尺寸');
   wm.main.setBounds(b);
 
-  // —— 10. 大尺寸 520x820，看拉伸后是不是散架 ——
+  // —— 10. 大尺寸，看拉伸后是不是散架 ——
   timer.beginPhase(PHASE.FOCUS);
   timer.endAt = Date.now() + 0.42 * timer.totalMs;
   timer.remainingMs = timer.endAt - Date.now();
   timer._emitChange(true);
   await wait(300);
-  wm.main.setBounds({ x: b.x, y: b.y, width: 520, height: 820 });
+  wm.main.setBounds({ x: b.x, y: b.y, width: 560, height: 860 });
   await shoot('主界面-10-放大尺寸');
 
   // —— 11. 几何体检：一眼看不出"数字会不会溢出环内圈""空档是不是对称"，
   //        这里直接量。数字用的是 tabular-nums，实测宽度比估算可靠得多。 ——
   console.log('\n几何体检（单位：逻辑像素）:');
   const SIZES = [
-    [360, 500],
-    [384, 548],
-    [440, 640],
+    [380, 560],
+    [420, 640],
+    [480, 720],
     [560, 860],
   ];
   for (const [w, h] of SIZES) {
