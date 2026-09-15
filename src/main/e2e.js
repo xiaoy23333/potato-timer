@@ -530,7 +530,14 @@ async function run(ctx) {
     check('待开始时主按钮是实心红（全屏唯一需要被找到的东西）', mainDom.primarySolid, String(mainDom.primarySolid));
     check('主窗口轮次刻度数量 = 长休间隔', mainDom.dots === 4, String(mainDom.dots));
     check('主窗口轮次文字为「第 1 / 4 轮」', mainDom.round === '第 1 / 4 轮', mainDom.round);
-    check('主窗口提示里带出快捷键', /Ctrl\s*\+\s*Alt\s*\+\s*P/.test(mainDom.hint), mainDom.hint);
+    // ⚠ 同理：不要写死 Ctrl+Alt+P，从配置里读出来比（见下面弹窗那条的说明）
+    const prettyHotkey = (a) =>
+      String(a || '').replace(/CommandOrControl|CmdOrCtrl|Control/gi, 'Ctrl').replace(/\+/g, ' + ');
+    check(
+      '主窗口提示里带出快捷键（跟着用户当前设置的键走）',
+      mainDom.hint.includes(prettyHotkey(store.get().hotkey)),
+      `提示里是「${mainDom.hint}」，配置里的键是「${prettyHotkey(store.get().hotkey)}」`,
+    );
     // 回归：曾写成不存在的 var(--break)，未定义的 var() 让 stroke 退回 none
     check(
       '待开始时进度环描边色可解析（不是 none）',
@@ -733,7 +740,14 @@ async function run(ctx) {
     );
     check('弹窗标题为「专注结束」', popupDom.title === '专注结束', popupDom.title);
     check('弹窗按钮文案正确', /后再提醒/.test(popupDom.snooze), popupDom.snooze);
-    check('弹窗按钮带快捷键提示', /Ctrl\s*\+\s*Alt\s*\+\s*P/.test(popupDom.kbd), popupDom.kbd);
+    // ⚠ 别写死 Ctrl+Alt+P：那是**用户可改的默认值**，他改成 Ctrl+\ 之后这里就会误报假失败
+    // （和当初「小浮窗颜色写死默认番茄红」是同一类错误）。改成从配置里读出来再比。
+    const prettyHotkeyOf = (a) => String(a || '').replace(/CommandOrControl|CmdOrCtrl|Control/gi, 'Ctrl').replace(/\+/g, ' + ');
+    check(
+      '弹窗按钮带快捷键提示（跟着用户当前设置的键走）',
+      popupDom.kbd.includes(prettyHotkeyOf(store.get().hotkey)),
+      `弹窗显示「${popupDom.kbd}」，配置里的键是「${prettyHotkeyOf(store.get().hotkey)}」`,
+    );
     check('滑块文案为「滑动开始下一轮」', popupDom.label === '滑动开始下一轮', popupDom.label);
     check('滑块初始在左端', popupDom.knobLeft === '4px', popupDom.knobLeft);
 
